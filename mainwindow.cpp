@@ -5,6 +5,9 @@
 #include <QMessageBox>
 #include <iostream>
 #include <sstream>
+#include <QFileDialog>
+#include <filesystem>
+#include <fstream>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -19,16 +22,13 @@ MainWindow::~MainWindow()
 }
 
 std::list<std::string> bones;
+std::list<std::string> bones2;
 
-void MainWindow::on_pushButton_clicked()
+void Parse(std::string Text)
 {
-    bones.clear();
-    QString qs = ui->textEdit->toPlainText();
-    std::string current_locale_text = qs.toLocal8Bit().constData();
-
     std::string line;
     std::istringstream input;
-    input.str(current_locale_text);
+    input.str(Text);
     while(getline(input, line))
     {
         std::string arr[4];
@@ -48,7 +48,33 @@ void MainWindow::on_pushButton_clicked()
         if (arr[0] == "time")
             bones.push_back(arr[3]);
     }
-     ui->textEdit->setText("");
+}
+
+void FileRead(std::string url)
+{
+    if (std::filesystem::exists(url))
+    {
+        std::ifstream file (url);
+        if (file.is_open())
+        {
+            std::string s;
+            while(getline(file,s))
+            {
+                Parse(s);
+            }
+        }
+    }
+}
+
+void MainWindow::on_pushButton_clicked()
+{
+    bones.clear();
+    QString qs = ui->textEdit->toPlainText();
+    std::string current_locale_text = qs.toLocal8Bit().constData();
+
+    Parse(current_locale_text);
+
+    ui->textEdit->setText("");
     for (auto const& i : bones)
     {
         ui->textEdit->setText(ui->textEdit->toPlainText() + i.c_str() + "\n");
@@ -92,3 +118,38 @@ void MainWindow::on_pushButton_3_clicked()
     ui->textEdit_3->setText(ui->textEdit_3->toPlainText() + "}");
 }
 
+
+void MainWindow::on_pushButton_4_clicked()
+{
+   bones.clear();
+   bones2.clear();
+   QString fileNames = QFileDialog::getOpenFileName(this, tr("Open File"), QDir::homePath() ,tr("vta Files (*.vta)"));
+   std::string current_locale_text = fileNames.toLocal8Bit().constData();
+   FileRead(current_locale_text);
+   int g = 0;
+   for (auto const& i : bones)
+   {
+       if(i == "")
+       {
+           g += 1;
+           if (g == 2)
+           {
+               break;
+           }
+       }
+       if(i != "")
+           bones2.push_back(i);
+   }
+
+   bones.clear();
+
+   for (auto const& i : bones2)
+   {
+        if(i != "")
+        {
+            bones.push_back(i);
+            std::cout << i << std::endl;
+            ui->textEdit->setText(ui->textEdit->toPlainText() + i.c_str() + "\n");
+        }
+   }
+}
